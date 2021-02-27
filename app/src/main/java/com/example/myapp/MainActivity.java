@@ -3,8 +3,10 @@ package com.example.myapp;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -23,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
     EditText txtUsuario, txtPassword;
     Button btnLogin;
+    SharedPreferences sesion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
         txtUsuario = findViewById(R.id.txtUsuario);
         txtPassword = findViewById(R.id.txtPassword);
         btnLogin = findViewById(R.id.btnLogin);
+
+        sesion = getSharedPreferences("sesion",0);
 
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -57,9 +62,26 @@ public class MainActivity extends AppCompatActivity {
                     public void onResponse(JSONObject response) {
                         try{
                             if(response.getString("entro").compareTo("si") == 0){
+
+                                SharedPreferences.Editor editor = sesion.edit();
+                                editor.putString("token", response.getString("token"));
+                                editor.putString("user", txtUsuario.getText().toString());
+
+                                String jwt = response.getString("token");
+                                String bloques [] = jwt.split("\\.");
+                                String payload = bloques[1];
+                                byte[] b = Base64.decode(payload, Base64.URL_SAFE);
+                                String payload2 = new String(b);
+                                JSONObject pl = new JSONObject(payload2);
+                                String rol = pl.getJSONObject("data").getString("rol");
+
+                                editor.putString("rol", rol);
+                                editor.commit();
+
                                 Toast.makeText(MainActivity.this, "Bienvendio", Toast.LENGTH_SHORT).show();
                                 Intent i = new Intent(MainActivity.this, MainActivity2.class);
                                 startActivity(i);
+
                             }else{
                                 Toast.makeText(MainActivity.this, "Error de usurio/conraseña", Toast.LENGTH_SHORT).show();
                             }
